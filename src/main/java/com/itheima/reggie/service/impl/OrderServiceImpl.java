@@ -56,6 +56,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Orders> implement
         //订单号
         long orderId = IdWorker.getId();
 
+
+
         //总金额，AtomicInteger保证线程安全
         AtomicInteger amount = new AtomicInteger(0);
 
