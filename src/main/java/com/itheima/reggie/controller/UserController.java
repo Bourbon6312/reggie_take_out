@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.jws.soap.SOAPBinding;
 import javax.servlet.http.HttpSession;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/user")
@@ -42,7 +43,11 @@ public class UserController {
             //SMSUtils.sendMessage("瑞吉外卖", "SMS_268520480", phone, code);
             log.info("验证码为：{}", code);
 
-            session.setAttribute(phone, code);
+            //保存到session
+            //session.setAttribute(phone, code);
+
+            //保存到redis，有效期为5分钟
+            redisTemplate.opsForValue().set(phone, code, 5, TimeUnit.MINUTES);
 
             return R.success("发送成功！");
         }
@@ -60,7 +65,12 @@ public class UserController {
     public R<User> login(@RequestBody Map map, HttpSession session) {
         String phone = map.get("phone").toString();
         String code = map.get("code").toString();
-        Object codeInSession = session.getAttribute(phone);
+
+        //从session中获取
+        //Object codeInSession = session.getAttribute(phone);
+
+        //从redis中获取
+        Object codeInSession = redisTemplate.opsForValue().get(phone);
 
         if (codeInSession != null && codeInSession.equals(code)) {
             LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
@@ -76,6 +86,9 @@ public class UserController {
             }
 
             session.setAttribute("user", user.getId());
+
+            redisTemplate.delete(phone);
+
             return R.success(user);
         }
 
